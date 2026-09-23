@@ -2,12 +2,12 @@ import AVFAudio
 import Foundation
 import Speech
 
-struct Request: Codable {
+struct SpeechRequest: Codable {
     let id: Int
     let path: String
 }
 
-struct Response: Codable {
+struct SpeechResponse: Codable {
     let id: Int
     let ok: Bool
     let text: String?
@@ -18,8 +18,6 @@ struct Response: Codable {
 func transcribeFile(path: String) async throws -> String {
     let file = try AVAudioFile(forReading: URL(fileURLWithPath: path))
     let locale = Locale(identifier: "pt_BR")
-
-    // Frases curtas são o caso principal da MAX: wake word, comandos e perguntas rápidas.
     let transcriber = DictationTranscriber(locale: locale, preset: .phrase)
 
     let context = AnalysisContext()
@@ -29,8 +27,8 @@ func transcribeFile(path: String) async throws -> String {
         "Max",
         "Henrique",
         "abra",
-        "abrir",
         "abre",
+        "abrir",
         "Google",
         "Chrome",
         "navegador",
@@ -43,15 +41,15 @@ func transcribeFile(path: String) async throws -> String {
         "está"
     ]
 
-    async let transcriptionFuture = try transcriber.results.reduce(AttributedString()) {
-        partial, result in
-        partial + result.text
-    }
-
     let options = SpeechAnalyzer.Options(
         priority: .userInitiated,
         modelRetention: .processLifetime
     )
+
+    async let transcriptionFuture = try transcriber.results.reduce(AttributedString()) {
+        partial, result in
+        partial + result.text
+    }
 
     let analyzer = SpeechAnalyzer(modules: [transcriber], options: options)
     try await analyzer.setContext(context)
@@ -67,12 +65,13 @@ func transcribeFile(path: String) async throws -> String {
     return String(attributed.characters)
 }
 
-func emit(_ response: Response) {
+func emitSpeech(_ response: SpeechResponse) {
     let encoder = JSONEncoder()
     guard let data = try? encoder.encode(response),
           let line = String(data: data, encoding: .utf8) else {
         return
     }
+
     print(line)
     fflush(stdout)
 }
@@ -89,12 +88,12 @@ struct NativeSpeechHelper {
             guard let data = line.data(using: .utf8) else { continue }
 
             do {
-                let request = try JSONDecoder().decode(Request.self, from: data)
+                let request = try JSONDecoder().decode(SpeechRequest.self, from: data)
                 let text = try await transcribeFile(path: request.path)
-                emit(Response(id: request.id, ok: true, text: text, error: nil))
+                emitSpeech(SpeechResponse(id: request.id, ok: true, text: text, error: nil))
             } catch {
-                let fallbackId = (try? JSONDecoder().decode(Request.self, from: data).id) ?? -1
-                emit(Response(
+                let fallbackId = (try? JSONDecoder().decode(SpeechRequest.self, from: data).id) ?? -1
+                emitSpeech(SpeechResponse(
                     id: fallbackId,
                     ok: false,
                     text: nil,

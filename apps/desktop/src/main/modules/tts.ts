@@ -50,29 +50,20 @@ export class TtsEngine {
         .map(line => line.match(/^(.+?)\s+pt_BR\s+#/i)?.[1]?.trim())
         .filter((voice): voice is string => Boolean(voice))
 
-      const preferred = [
-        'Felipe',
-        'Eddy (Portuguese (Brazil))',
-        'Reed (Portuguese (Brazil))',
-        'Rocko (Portuguese (Brazil))'
-      ]
+      const malePrefixes = ['felipe', 'eddy', 'reed', 'rocko']
+      const maleVoice = voices.find(voice => {
+        const normalized = voice.toLowerCase()
+        return malePrefixes.some(prefix => normalized.startsWith(prefix))
+      })
 
-      for (const candidate of preferred) {
-        const exact = voices.find(voice => voice.toLowerCase() === candidate.toLowerCase())
-        if (exact) {
-          console.log(`[MAX][TTS] voz masculina: ${exact}`)
-          return exact
-        }
+      if (maleVoice) {
+        console.log(`[MAX][TTS] voz masculina pt-BR: ${maleVoice}`)
+        return maleVoice
       }
 
-      const felipeVariant = voices.find(voice => voice.toLowerCase().startsWith('felipe'))
-      if (felipeVariant) {
-        console.log(`[MAX][TTS] voz masculina: ${felipeVariant}`)
-        return felipeVariant
-      }
-
-      console.warn('[MAX][TTS] voz masculina pt-BR não encontrada. Instale Felipe em Ajustes > Acessibilidade > Leitura e Fala.')
-      return null
+      throw new Error(
+        'Nenhuma voz masculina pt-BR está instalada. Instale a voz Felipe em Ajustes do Sistema > Acessibilidade > Leitura e Fala > Voz do sistema.'
+      )
     } catch (error) {
       console.warn('[MAX][TTS] não foi possível listar as vozes do macOS.', error)
       return null

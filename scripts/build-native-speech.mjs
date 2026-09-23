@@ -6,34 +6,40 @@ import { promisify } from 'node:util'
 const execFileAsync = promisify(execFile)
 
 if (process.platform !== 'darwin') {
-  console.log('native-speech: skipped (macOS only)')
+  console.log('native-helpers: skipped (macOS only)')
   process.exit(0)
 }
 
-const source = resolve('apps/desktop/native/speech-helper.swift')
 const outputDir = resolve('build/native')
-const output = resolve(outputDir, 'speech-helper')
-
 await mkdir(outputDir, { recursive: true })
 
-try {
-  await execFileAsync('/usr/bin/xcrun', [
-    'swiftc',
-    '-parse-as-library',
-    '-O',
-    '-framework',
-    'Speech',
-    '-framework',
-    'AVFAudio',
-    source,
-    '-o',
-    output
-  ])
+const targets = [
+  {
+    name: 'speech-helper',
+    source: resolve('apps/desktop/native/speech-helper.swift'),
+    frameworks: ['Speech', 'AVFAudio']
+  },
+  {
+    name: 'language-helper',
+    source: resolve('apps/desktop/native/language-helper.swift'),
+    frameworks: ['FoundationModels']
+  }
+]
 
-  console.log(`native-speech: built ${output}`)
-} catch (error) {
-  const stderr = error?.stderr ? String(error.stderr) : String(error)
-  console.error(stderr)
-  console.error('native-speech: requires macOS 26 SDK / Xcode Command Line Tools compatible with SpeechAnalyzer.')
-  process.exit(1)
+for (const target of targets) {
+  const args = ['swiftc', '-parse-as-library', '-O']
+  for (const framework of target.frameworks) {
+    args.push('-framework', framework)
+  }
+  args.push(target.source, '-o', resolve(outputDir, target.name))
+
+  try {
+    await execFileAsync('/usr/bin/xcrun', args)
+    console.log(`native-helpers: built ${target.name}`)
+  } catch (error) {
+    const stderr = error?.stderr ? String(error.stderr) : String(error)
+    console.error(stderr)
+    console.error(`native-helpers: failed to build ${target.name}. macOS 26 SDK / current Xcode Command Line Tools are required.`)
+    process.exit(1)
+  }
 }

@@ -14,9 +14,10 @@
     "check": "npm run lint && npm test && npm run build",
     "package:mac": "npm run build && electron-builder --mac",
     "package:mac:dir": "npm run build && electron-builder --mac --dir",
-    "native:speech": "node scripts/build-native-speech.mjs",
-    "predev": "npm run native:speech",
-    "prebuild": "npm run native:speech"
+    "native:speech": "npm run native:helpers",
+    "predev": "npm run native:helpers",
+    "prebuild": "npm run native:helpers",
+    "native:helpers": "node scripts/build-native-speech.mjs"
   },
   "dependencies": {
     "default-browser": "^5.2.1",
@@ -72,6 +73,10 @@
       {
         "from": "build/native/speech-helper",
         "to": "native/speech-helper"
+      },
+      {
+        "from": "build/native/language-helper",
+        "to": "native/language-helper"
       }
     ]
   }

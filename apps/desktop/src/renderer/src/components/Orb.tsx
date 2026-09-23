@@ -15,11 +15,11 @@ const labels: Record<State, string> = {
 }
 
 const TARGET_SAMPLE_RATE = 16_000
-const MIN_UTTERANCE_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.28)
-const END_SILENCE_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.42)
+const MIN_UTTERANCE_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.22)
+const END_SILENCE_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.28)
 const MAX_UTTERANCE_SAMPLES = TARGET_SAMPLE_RATE * 12
 const WAKE_SCAN_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 2.4)
-const PRE_ROLL_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.24)
+const PRE_ROLL_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.20)
 const DRAG_THRESHOLD_PX = 6
 
 export function Orb() {
@@ -46,12 +46,15 @@ export function Orb() {
 
     if (next === 'speaking') resetSpeechBuffers()
 
+    if (next === 'sleeping' || next === 'waking') {
+      setControlsVisible(false)
+      setMenuOpen(false)
+    }
+
     if (next === 'sleeping') {
       cameraStream.current?.getTracks().forEach(track => track.stop())
       cameraStream.current = null
       setCameraEnabled(false)
-      setControlsVisible(false)
-      setMenuOpen(false)
     }
 
     setState(next)
@@ -104,7 +107,7 @@ export function Orb() {
         const ctx = new AudioContext()
         audioContext.current = ctx
         const source = ctx.createMediaStreamSource(stream)
-        processor = ctx.createScriptProcessor(2048, 1, 1)
+        processor = ctx.createScriptProcessor(1024, 1, 1)
 
         processor.onaudioprocess = event => {
           const input = event.inputBuffer.getChannelData(0)
@@ -150,7 +153,7 @@ export function Orb() {
 
           const maxUtteranceSamples = sleeping ? WAKE_SCAN_SAMPLES : MAX_UTTERANCE_SAMPLES
           const endSilenceSamples = sleeping
-            ? Math.round(TARGET_SAMPLE_RATE * 0.34)
+            ? Math.round(TARGET_SAMPLE_RATE * 0.22)
             : END_SILENCE_SAMPLES
 
           if (

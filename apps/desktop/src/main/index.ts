@@ -8,7 +8,8 @@ import { BrowserControl } from './modules/browser-control'
 import { ComputerControl } from './modules/computer-control'
 import { LocalDatabase } from './modules/database'
 import { KnowledgeEngine } from './modules/knowledge'
-import { LlmProviderRegistry, OllamaLlmProvider } from './modules/llm'
+import { LlmProviderRegistry, NativeAppleLlmProvider } from './modules/llm'
+import { NativeAppleLanguageProcess } from './modules/native-language'
 import { MemoryEngine } from './modules/memory'
 import { Orchestrator } from './modules/orchestrator'
 import { PermissionsEngine } from './modules/permissions'
@@ -28,6 +29,7 @@ let orchestrator: Orchestrator
 let knowledge: KnowledgeEngine
 let database: LocalDatabase
 let sttProcess: NativeMacSpeechProcess | null = null
+let languageProcess: NativeAppleLanguageProcess | null = null
 let orbDragState: { screenX: number; screenY: number; windowX: number; windowY: number } | null = null
 const permissions = new PermissionsEngine()
 const wakeWord = new WakeWordEngine()
@@ -126,17 +128,24 @@ async function setup(): Promise<void> {
   orbWindow = createOrbWindow()
 
   const state = new StateController(() => orbWindow)
-  const speechHelperPath = app.isPackaged
-    ? join(process.resourcesPath, 'native', 'speech-helper')
-    : join(process.cwd(), 'build', 'native', 'speech-helper')
+  const nativeDir = app.isPackaged
+    ? join(process.resourcesPath, 'native')
+    : join(process.cwd(), 'build', 'native')
+
+  const speechHelperPath = join(nativeDir, 'speech-helper')
+  const languageHelperPath = join(nativeDir, 'language-helper')
+
   sttProcess = new NativeMacSpeechProcess(speechHelperPath, join(userData, 'speech-temp'))
+  languageProcess = new NativeAppleLanguageProcess(languageHelperPath)
+  languageProcess.start()
+
   const audio = new AudioEngine(new NativeMacSpeechProvider(sttProcess), new TtsEngine())
   orchestrator = new Orchestrator({
     state,
     audio,
     browser: new BrowserControl(),
     computer: new ComputerControl(),
-    llm: new LlmProviderRegistry(new OllamaLlmProvider()),
+    llm: new LlmProviderRegistry(new NativeAppleLlmProvider(languageProcess)),
     audit: new AuditLog(join(userData, 'audit', 'actions.jsonl')),
     vision: new VisionEngine(),
     risk: new RiskPolicy(),
@@ -242,5 +251,6 @@ app.on('window-all-closed', () => {})
 app.on('before-quit', () => {
   console.log('[MAX][lifecycle] before-quit')
   sttProcess?.dispose()
+  languageProcess?.dispose()
   tray?.destroy()
 })

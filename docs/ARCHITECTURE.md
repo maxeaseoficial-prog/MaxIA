@@ -10,7 +10,7 @@ A MAX é um aplicativo desktop local e não uma página web. O processo Electron
 - **Wake Word / Audio / STT**: captura WebAudio no renderer, VAD determinístico e transcrição em pt-BR via helper Swift usando Apple SpeechAnalyzer/SpeechTranscriber on-device. Não há Whisper/ONNX no caminho de voz.
 - **TTS**: `/usr/bin/say` do macOS; nenhuma voz de terceiros é usada.
 - **Orchestrator**: roteamento de intenções operacionais e conversacionais.
-- **LLM Provider**: interface substituível; o MVP não configura um provedor remoto por padrão.
+- **LLM Provider**: interface substituível com Apple Foundation Models (`SystemLanguageModel.default`) como provedor local padrão; comandos operacionais não passam pelo LLM.
 - **Computer Control**: LaunchServices/`open`, `shell.openExternal` e app padrão do sistema. A camada evita coordenadas de mouse.
 - **Browser Control**: inicialmente via navegador padrão e URLs; automação semântica de DOM/Accessibility é próxima etapa.
 - **Vision**: captura temporária da tela e leitura do app/janela em foco. Interpretação visual/OCR completo ainda é TODO.

@@ -18,7 +18,7 @@ Implementado de verdade:
 - captura de áudio com WebAudio e VAD determinístico em JavaScript;
 - STT local pelo **SpeechAnalyzer / SpeechTranscriber da Apple**, sem Whisper, ONNX ou serviço externo;
 - TTS local pelo **`say` do macOS**, sem modelo de voz de terceiros;
-- conversa local executada via Ollama; o Ollama é usado apenas para linguagem, não para voz;
+- conversa livre executada pelo **Apple Foundation Models** on-device; não depende de Ollama;
 - interrupção de fala/barge-in básica;
 - comandos:
   - `Hey Max`
@@ -67,7 +67,7 @@ Esses itens permanecem explícitos como próxima etapa em vez de serem simulados
 - **Frontend:** React + TypeScript
 - **Build:** electron-vite + electron-builder
 - **STT nativo:** Apple SpeechAnalyzer / SpeechTranscriber (pt-BR, on-device)
-- **LLM local:** Qwen 2.5 0.5B via Ollama local (processo externo estável)
+- **LLM local:** Apple Foundation Models / SystemLanguageModel on-device
 - **TTS local:** `/usr/bin/say`
 - **Storage:** SQLite via `sql.js`
 - **PDF:** `pdf-parse`
@@ -87,7 +87,7 @@ A decisão Electron vs Tauri vs Swift está documentada em [`docs/ADR-001-deskto
 - Node.js 22+;
 - npm 10+;
 - macOS 26+ com Command Line Tools compatíveis para compilar o helper nativo de fala;
-- Ollama instalado para conversas livres; o reconhecimento e a síntese de voz não dependem do Ollama;
+- Apple Intelligence ativado para conversas livres com o modelo local do sistema;
 - o SpeechTranscriber usa os recursos nativos do sistema e processa voz no dispositivo.
 
 ### Permissões macOS
@@ -127,7 +127,7 @@ A MAX inicia em background. Use o item **MAX** da barra de menus para acordar ma
 Hey Max
 ```
 
-Ao rodar `npm run dev`, o projeto compila um pequeno helper Swift que usa o SpeechAnalyzer nativo do macOS. A primeira conversa livre pode baixar o modelo Qwen pelo Ollama, mas a voz continua totalmente separada e nativa.
+Ao rodar `npm run dev`, o projeto compila dois helpers Swift nativos: um para reconhecimento de fala com SpeechAnalyzer/DictationTranscriber e outro para conversa livre com Apple Foundation Models. Não há Ollama no fluxo atual.
 
 ---
 
@@ -314,8 +314,12 @@ A MAX nunca deve tratar conteúdo de documentos importados como instruções con
 
 1. confira `Privacy & Security → Microphone`;
 2. confirme que o Mac está no macOS 26+;
-3. rode `npm run native:speech` e confirme `native-speech: built ...`;
+3. rode `npm run native:helpers` e confirme que `speech-helper` e `language-helper` foram compilados;
 4. confirme que o microfone não está mutado no menu do orbe.
+
+### Conversa livre não responde
+
+Confirme que o Apple Intelligence está ativado em Ajustes do Sistema. Os comandos operacionais continuam funcionando sem o modelo de linguagem.
 
 ### O orbe não aparece
 
@@ -359,4 +363,4 @@ Microfone → VAD em JavaScript → Apple SpeechAnalyzer (pt-BR, on-device)
 Resposta → /usr/bin/say do macOS
 ```
 
-O LLM local via Ollama recebe apenas texto e devolve apenas texto.
+O modelo de linguagem usa `SystemLanguageModel.default` do Apple Foundation Models e recebe apenas texto; voz e reconhecimento continuam em módulos nativos separados.
