@@ -8,7 +8,7 @@ import { BrowserControl } from './modules/browser-control'
 import { ComputerControl } from './modules/computer-control'
 import { LocalDatabase } from './modules/database'
 import { KnowledgeEngine } from './modules/knowledge'
-import { LlmProviderRegistry, LocalTransformersLlmProvider } from './modules/llm'
+import { LlmProviderRegistry, OllamaLlmProvider } from './modules/llm'
 import { LocalAiProcess } from './modules/local-ai-process'
 import { MemoryEngine } from './modules/memory'
 import { Orchestrator } from './modules/orchestrator'
@@ -28,7 +28,6 @@ let orchestrator: Orchestrator
 let knowledge: KnowledgeEngine
 let database: LocalDatabase
 let sttProcess: LocalAiProcess | null = null
-let llmProcess: LocalAiProcess | null = null
 const permissions = new PermissionsEngine()
 const wakeWord = new WakeWordEngine()
 let lastTranscript = ''
@@ -128,14 +127,13 @@ async function setup(): Promise<void> {
   const state = new StateController(() => orbWindow)
   const workerPath = join(currentDir, 'workers', 'ai-worker.js')
   sttProcess = new LocalAiProcess(workerPath, join(userData, 'models', 'stt'), 'STT')
-  llmProcess = new LocalAiProcess(workerPath, join(userData, 'models', 'llm'), 'LLM')
   const audio = new AudioEngine(new LocalWhisperProvider(sttProcess), new TtsEngine())
   orchestrator = new Orchestrator({
     state,
     audio,
     browser: new BrowserControl(),
     computer: new ComputerControl(),
-    llm: new LlmProviderRegistry(new LocalTransformersLlmProvider(llmProcess)),
+    llm: new LlmProviderRegistry(new OllamaLlmProvider()),
     audit: new AuditLog(join(userData, 'audit', 'actions.jsonl')),
     vision: new VisionEngine(),
     risk: new RiskPolicy(),
@@ -155,9 +153,10 @@ async function setup(): Promise<void> {
       const result = await audio.transcribe(Float32Array.from(samples))
       const text = result.text.trim()
       if (!text) return { text: '', action: 'none' }
-      console.log(`[MAX][STT] ${JSON.stringify(text)}`)
+      const ambientOnly = /^(?:[\\[(]?\\s*(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\\s*[\\])]?\\s*[.!?]*)$/i.test(text)
+      if (ambientOnly) return { text: '', action: 'ambient' }
 
-    const now = Date.now()
+      const now = Date.now()
     if (text === lastTranscript && now - lastTranscriptAt < 3500) return { text, action: 'duplicate' }
     lastTranscript = text
     lastTranscriptAt = now
@@ -165,10 +164,13 @@ async function setup(): Promise<void> {
     const wake = wakeWord.detect(text)
     if (state.current === 'sleeping') {
       if (!wake.detected) return { text, action: 'sleeping' }
+      console.log(`[MAX][WAKE] ${JSON.stringify(text)}`)
       orchestrator.wake()
       if (wake.commandAfterWakeWord) void orchestrator.handleTranscript(wake.commandAfterWakeWord)
       return { text, action: wake.commandAfterWakeWord ? 'wake-command' : 'wake' }
     }
+
+    console.log(`[MAX][STT] ${JSON.stringify(text)}`)
 
     if (wake.detected && /descans/.test(wake.commandAfterWakeWord)) {
       void orchestrator.handleTranscript('descansar')
@@ -218,6 +220,5 @@ app.on('window-all-closed', () => {})
 app.on('before-quit', () => {
   console.log('[MAX][lifecycle] before-quit')
   sttProcess?.dispose()
-  llmProcess?.dispose()
   tray?.destroy()
 })

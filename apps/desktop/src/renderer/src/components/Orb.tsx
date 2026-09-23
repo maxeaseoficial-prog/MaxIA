@@ -18,6 +18,7 @@ const TARGET_SAMPLE_RATE = 16_000
 const MIN_UTTERANCE_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.35)
 const END_SILENCE_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.72)
 const MAX_UTTERANCE_SAMPLES = TARGET_SAMPLE_RATE * 12
+const WAKE_SCAN_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 2.6)
 const PRE_ROLL_SAMPLES = Math.round(TARGET_SAMPLE_RATE * 0.28)
 
 export function Orb() {
@@ -117,7 +118,10 @@ export function Orb() {
             noiseFloor.current = Math.max(0.0025, Math.min(0.03, noiseFloor.current * 0.96 + rms * 0.04))
           }
 
-          const threshold = Math.max(0.012, noiseFloor.current * 3.15)
+          const sleeping = stateRef.current === 'sleeping'
+          const threshold = sleeping
+            ? Math.max(0.016, noiseFloor.current * 3.8)
+            : Math.max(0.012, noiseFloor.current * 3.15)
           const voiceDetected = rms >= threshold
 
           if (!speechActive.current) {
@@ -145,9 +149,16 @@ export function Orb() {
             silenceSamples.current += downsampled.length
           }
 
+          const maxUtteranceSamples = stateRef.current === 'sleeping'
+            ? WAKE_SCAN_SAMPLES
+            : MAX_UTTERANCE_SAMPLES
+          const endSilenceSamples = stateRef.current === 'sleeping'
+            ? Math.round(TARGET_SAMPLE_RATE * 0.45)
+            : END_SILENCE_SAMPLES
+
           if (
-            silenceSamples.current >= END_SILENCE_SAMPLES ||
-            speechBuffer.current.length >= MAX_UTTERANCE_SAMPLES
+            silenceSamples.current >= endSilenceSamples ||
+            speechBuffer.current.length >= maxUtteranceSamples
           ) {
             void flushUtterance()
           }

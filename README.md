@@ -18,7 +18,7 @@ Implementado de verdade:
 - captura de áudio com WebAudio e processamento adaptativo;
 - TTS local pelo `say` do macOS;
 - VAD adaptativo antes do Whisper e filtro anti-alucinação para silêncio/ruído;
-- STT e LLM isolados do processo principal: se ONNX falhar, a interface da MAX permanece viva e o worker reinicia;
+- STT isolado do processo principal; conversa local executada via Ollama para evitar crash nativo do ONNX dentro do Electron;
 - interrupção de fala/barge-in básica;
 - comandos:
   - `Hey Max`
@@ -67,7 +67,7 @@ Esses itens permanecem explícitos como próxima etapa em vez de serem simulados
 - **Frontend:** React + TypeScript
 - **Build:** electron-vite + electron-builder
 - **STT local:** Whisper Tiny via `@xenova/transformers`, isolado em processo filho
-- **LLM local:** Qwen 1.5 0.5B Chat via `@xenova/transformers`, isolado em processo filho
+- **LLM local:** Qwen 2.5 0.5B via Ollama local (processo externo estável)
 - **TTS local:** `/usr/bin/say`
 - **Storage:** SQLite via `sql.js`
 - **PDF:** `pdf-parse`
