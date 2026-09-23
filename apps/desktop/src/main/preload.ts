@@ -5,7 +5,7 @@ contextBridge.exposeInMainWorld('maxApi', {
   sleep: () => ipcRenderer.invoke('max:sleep'),
   cancel: () => ipcRenderer.invoke('max:cancel'),
   command: (text: string) => ipcRenderer.invoke('max:command', text),
-  transcribe: (samples: number[]) => ipcRenderer.invoke('audio:transcribe', samples),
+  transcribe: (samples: number[], sampleRate: number) => ipcRenderer.invoke('audio:transcribe', samples, sampleRate),
   bargeIn: () => ipcRenderer.invoke('audio:barge-in'),
   orbDragStart: (screenX: number, screenY: number) => ipcRenderer.send('orb:drag-start', screenX, screenY),
   orbDragMove: (screenX: number, screenY: number) => ipcRenderer.send('orb:drag-move', screenX, screenY),

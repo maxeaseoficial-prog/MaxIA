@@ -179,9 +179,10 @@ async function setup(): Promise<void> {
     orbDragState = null
   })
 
-  ipcMain.handle('audio:transcribe', async (_event, samples: number[]) => {
+  ipcMain.handle('audio:transcribe', async (_event, samples: number[], sampleRate: number) => {
     try {
-      const result = await audio.transcribe(Float32Array.from(samples))
+      const safeSampleRate = Number.isFinite(sampleRate) && sampleRate >= 8_000 && sampleRate <= 192_000 ? sampleRate : 48_000
+      const result = await audio.transcribe(Float32Array.from(samples), safeSampleRate)
       const text = result.text.trim()
       if (!text) return { text: '', action: 'none' }
       const ambientOnly = /^(?:\[(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\]|\((?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\)|(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel))[.!?]*$/i.test(text.trim())

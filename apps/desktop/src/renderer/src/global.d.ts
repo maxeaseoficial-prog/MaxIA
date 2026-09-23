@@ -7,7 +7,7 @@ declare global {
       sleep(): Promise<void>
       cancel(): Promise<void>
       command(text: string): Promise<void>
-      transcribe(samples: number[]): Promise<{ text: string; action: string }>
+      transcribe(samples: number[], sampleRate: number): Promise<{ text: string; action: string }>
       bargeIn(): Promise<void>
       orbDragStart(screenX: number, screenY: number): void
       orbDragMove(screenX: number, screenY: number): void

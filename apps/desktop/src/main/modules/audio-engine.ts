@@ -4,8 +4,8 @@ import type { TtsEngine } from './tts'
 export class AudioEngine {
   constructor(private readonly stt: SttProvider, private readonly tts: TtsEngine) {}
 
-  transcribe(samples: Float32Array): Promise<Transcription> {
-    return this.stt.transcribe(samples, 16000)
+  transcribe(samples: Float32Array, sampleRate = 16_000): Promise<Transcription> {
+    return this.stt.transcribe(samples, sampleRate)
   }
 
   speak(text: string): Promise<void> {
