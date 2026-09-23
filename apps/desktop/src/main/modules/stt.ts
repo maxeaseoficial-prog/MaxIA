@@ -9,8 +9,11 @@ export interface SttProvider {
 
 export class LocalWhisperProvider implements SttProvider {
   readonly id = 'isolated-xenova-whisper-tiny'
+  private readonly process: LocalAiProcess
 
-  constructor(private readonly process: LocalAiProcess) {}
+  constructor(process: LocalAiProcess) {
+    this.process = process
+  }
 
   async transcribe(samples: Float32Array, sampleRate = 16_000): Promise<Transcription> {
     if (samples.length < Math.round(sampleRate * 0.35)) return { text: '' }
