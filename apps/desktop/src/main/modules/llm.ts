@@ -45,10 +45,11 @@ export class OllamaLlmProvider implements LlmProvider {
             },
             { role: 'user', content: userText }
           ],
+          keep_alive: '30m',
           options: {
-            temperature: 0.55,
+            temperature: 0.45,
             top_p: 0.9,
-            num_predict: 160
+            num_predict: 120
           }
         })
       }, 180_000)
@@ -110,6 +111,18 @@ export class OllamaLlmProvider implements LlmProvider {
       if (!pull.ok) throw new Error(`Falha ao baixar ${this.model}: HTTP ${pull.status}.`)
       console.log(`[MAX][LLM] modelo ${this.model} pronto.`)
     }
+
+    // Mantém o modelo carregado para reduzir o atraso da primeira resposta real.
+    await this.request('/api/generate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: this.model,
+        prompt: '',
+        stream: false,
+        keep_alive: '30m'
+      })
+    }, 120_000)
   }
 
   private async tryTags(): Promise<OllamaTags | null> {

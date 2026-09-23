@@ -19,6 +19,7 @@ await mkdir(outputDir, { recursive: true })
 try {
   await execFileAsync('/usr/bin/xcrun', [
     'swiftc',
+    '-parse-as-library',
     '-O',
     '-framework',
     'Speech',

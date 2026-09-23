@@ -18,14 +18,44 @@ struct Response: Codable {
 func transcribeFile(path: String) async throws -> String {
     let file = try AVAudioFile(forReading: URL(fileURLWithPath: path))
     let locale = Locale(identifier: "pt_BR")
-    let transcriber = SpeechTranscriber(locale: locale, preset: .offlineTranscription)
+
+    // Frases curtas são o caso principal da MAX: wake word, comandos e perguntas rápidas.
+    let transcriber = DictationTranscriber(locale: locale, preset: .phrase)
+
+    let context = AnalysisContext()
+    context.contextualStrings[.general] = [
+        "Hey Max",
+        "Ei Max",
+        "Max",
+        "Henrique",
+        "abra",
+        "abrir",
+        "abre",
+        "Google",
+        "Chrome",
+        "navegador",
+        "WhatsApp",
+        "cérebro",
+        "descansar",
+        "microfone",
+        "câmera",
+        "configurações",
+        "está"
+    ]
 
     async let transcriptionFuture = try transcriber.results.reduce(AttributedString()) {
         partial, result in
         partial + result.text
     }
 
-    let analyzer = SpeechAnalyzer(modules: [transcriber])
+    let options = SpeechAnalyzer.Options(
+        priority: .userInitiated,
+        modelRetention: .processLifetime
+    )
+
+    let analyzer = SpeechAnalyzer(modules: [transcriber], options: options)
+    try await analyzer.setContext(context)
+    try await analyzer.prepareToAnalyze(in: file.processingFormat)
 
     if let lastSample = try await analyzer.analyzeSequence(from: file) {
         try await analyzer.finalizeAndFinish(through: lastSample)

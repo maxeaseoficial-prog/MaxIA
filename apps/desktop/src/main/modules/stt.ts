@@ -24,7 +24,7 @@ export class NativeMacSpeechProvider implements SttProvider {
 }
 
 export function sanitizeTranscript(raw: string): string {
-  const text = raw.replace(/\s+/g, ' ').trim()
+  let text = raw.replace(/\s+/g, ' ').trim()
   if (!text || text.length > 420) return ''
 
   const ambientOnly = /^(?:\[(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\]|\((?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\)|(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel))[.!?]*$/i
@@ -42,6 +42,15 @@ export function sanitizeTranscript(raw: string): string {
     const maxCount = Math.max(...counts.values())
     if (maxCount / words.length >= 0.55) return ''
   }
+
+  // Correções conservadoras para erros recorrentes do ditado pt-BR em frases curtas.
+  // "estam" não é uma forma verbal válida; "abram" é aceito só como variação
+  // quando aparece em posição de comando dirigido à MAX.
+  text = text.replace(/\bestam\b/gi, 'está')
+  text = text.replace(
+    /^((?:(?:hey|ei|e)\s+(?:max|mais|mex)[, ]+)?)abram\b/i,
+    (_match, prefix: string) => `${prefix ?? ''}abra`
+  )
 
   return text
 }
