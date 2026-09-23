@@ -9,6 +9,7 @@ import { ComputerControl } from './modules/computer-control'
 import { LocalDatabase } from './modules/database'
 import { KnowledgeEngine } from './modules/knowledge'
 import { LlmProviderRegistry, LocalTransformersLlmProvider } from './modules/llm'
+import { LocalAiProcess } from './modules/local-ai-process'
 import { MemoryEngine } from './modules/memory'
 import { Orchestrator } from './modules/orchestrator'
 import { PermissionsEngine } from './modules/permissions'
@@ -26,6 +27,8 @@ let tray: Tray | null = null
 let orchestrator: Orchestrator
 let knowledge: KnowledgeEngine
 let database: LocalDatabase
+let sttProcess: LocalAiProcess | null = null
+let llmProcess: LocalAiProcess | null = null
 const permissions = new PermissionsEngine()
 const wakeWord = new WakeWordEngine()
 let lastTranscript = ''
@@ -123,13 +126,16 @@ async function setup(): Promise<void> {
   orbWindow = createOrbWindow()
 
   const state = new StateController(() => orbWindow)
-  const audio = new AudioEngine(new LocalWhisperProvider(join(userData, 'models')), new TtsEngine())
+  const workerPath = join(currentDir, 'workers', 'ai-worker.js')
+  sttProcess = new LocalAiProcess(workerPath, join(userData, 'models', 'stt'), 'STT')
+  llmProcess = new LocalAiProcess(workerPath, join(userData, 'models', 'llm'), 'LLM')
+  const audio = new AudioEngine(new LocalWhisperProvider(sttProcess), new TtsEngine())
   orchestrator = new Orchestrator({
     state,
     audio,
     browser: new BrowserControl(),
     computer: new ComputerControl(),
-    llm: new LlmProviderRegistry(new LocalTransformersLlmProvider(join(userData, 'models', 'llm'))),
+    llm: new LlmProviderRegistry(new LocalTransformersLlmProvider(llmProcess)),
     audit: new AuditLog(join(userData, 'audit', 'actions.jsonl')),
     vision: new VisionEngine(),
     risk: new RiskPolicy(),
@@ -211,5 +217,7 @@ void app.whenReady().then(setup)
 app.on('window-all-closed', () => {})
 app.on('before-quit', () => {
   console.log('[MAX][lifecycle] before-quit')
+  sttProcess?.dispose()
+  llmProcess?.dispose()
   tray?.destroy()
 })

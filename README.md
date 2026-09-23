@@ -17,6 +17,8 @@ Implementado de verdade:
 - wake word **"Hey Max"** usando reconhecimento local com Whisper Tiny via Transformers.js;
 - captura de áudio com WebAudio e processamento adaptativo;
 - TTS local pelo `say` do macOS;
+- VAD adaptativo antes do Whisper e filtro anti-alucinação para silêncio/ruído;
+- STT e LLM isolados do processo principal: se ONNX falhar, a interface da MAX permanece viva e o worker reinicia;
 - interrupção de fala/barge-in básica;
 - comandos:
   - `Hey Max`
@@ -64,8 +66,8 @@ Esses itens permanecem explícitos como próxima etapa em vez de serem simulados
 - **Desktop:** Electron
 - **Frontend:** React + TypeScript
 - **Build:** electron-vite + electron-builder
-- **STT local:** Whisper Tiny via `@xenova/transformers`
-- **LLM local:** Qwen 1.5 0.5B Chat via `@xenova/transformers`
+- **STT local:** Whisper Tiny via `@xenova/transformers`, isolado em processo filho
+- **LLM local:** Qwen 1.5 0.5B Chat via `@xenova/transformers`, isolado em processo filho
 - **TTS local:** `/usr/bin/say`
 - **Storage:** SQLite via `sql.js`
 - **PDF:** `pdf-parse`
