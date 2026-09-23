@@ -153,7 +153,7 @@ async function setup(): Promise<void> {
       const result = await audio.transcribe(Float32Array.from(samples))
       const text = result.text.trim()
       if (!text) return { text: '', action: 'none' }
-      const ambientOnly = /^(?:[\\[(]?\\s*(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\\s*[\\])]?\\s*[.!?]*)$/i.test(text)
+      const ambientOnly = /^(?:\[(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\]|\((?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\)|(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel))[.!?]*$/i.test(text.trim())
       if (ambientOnly) return { text: '', action: 'ambient' }
 
       const now = Date.now()
