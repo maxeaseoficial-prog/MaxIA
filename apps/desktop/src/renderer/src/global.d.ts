@@ -9,6 +9,9 @@ declare global {
       command(text: string): Promise<void>
       transcribe(samples: number[]): Promise<{ text: string; action: string }>
       bargeIn(): Promise<void>
+      orbDragStart(screenX: number, screenY: number): void
+      orbDragMove(screenX: number, screenY: number): void
+      orbDragEnd(): void
       onState(callback: (state: string) => void): () => void
       permissions: {
         snapshot(): Promise<Record<string, string | boolean>>

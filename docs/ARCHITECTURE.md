@@ -7,8 +7,8 @@ A MAX é um aplicativo desktop local e não uma página web. O processo Electron
 ## Módulos atuais
 
 - **Desktop Shell**: Electron, BrowserWindow transparente e always-on-top, tray e janela do Cérebro.
-- **Wake Word / Audio / STT**: captura WebAudio no renderer e inferência local com Whisper Tiny via Transformers.js. O modelo é baixado na primeira execução e depois fica em cache local do provider.
-- **TTS**: `/usr/bin/say` no macOS.
+- **Wake Word / Audio / STT**: captura WebAudio no renderer, VAD determinístico e transcrição em pt-BR via helper Swift usando Apple SpeechAnalyzer/SpeechTranscriber on-device. Não há Whisper/ONNX no caminho de voz.
+- **TTS**: `/usr/bin/say` do macOS; nenhuma voz de terceiros é usada.
 - **Orchestrator**: roteamento de intenções operacionais e conversacionais.
 - **LLM Provider**: interface substituível; o MVP não configura um provedor remoto por padrão.
 - **Computer Control**: LaunchServices/`open`, `shell.openExternal` e app padrão do sistema. A camada evita coordenadas de mouse.

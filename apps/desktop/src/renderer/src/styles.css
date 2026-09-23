@@ -4,8 +4,8 @@ body { margin: 0; overflow: hidden; background: transparent; }
 button, input { font: inherit; }
 button { color: inherit; }
 
-.orb-shell { width: 330px; height: 430px; position: relative; -webkit-app-region: drag; user-select: none; }
-.orb { position: absolute; right: 126px; top: 126px; width: 114px; height: 114px; border-radius: 999px; display: grid; place-items: center; filter: drop-shadow(0 0 24px rgba(0, 137, 255, .65)); animation: float 3.6s ease-in-out infinite; }
+.orb-shell { width: 330px; height: 430px; position: relative; -webkit-app-region: no-drag; user-select: none; }
+.orb { position: absolute; right: 126px; top: 126px; width: 114px; height: 114px; border-radius: 999px; display: grid; place-items: center; filter: drop-shadow(0 0 24px rgba(0, 137, 255, .65)); animation: float 3.6s ease-in-out infinite; cursor: grab; touch-action: none; -webkit-app-region: no-drag; }\n.orb:active { cursor: grabbing; }
 .orb::before { content: ""; position: absolute; inset: 18px; border-radius: 50%; background: radial-gradient(circle, #071933 0 42%, #05255a 66%, transparent 68%); box-shadow: inset 0 0 26px #00152c, 0 0 24px #0c8cff; }
 .orb-ring { position: absolute; width: 104px; height: 104px; border: 2px solid #28a8ff; border-radius: 42% 58% 62% 38% / 55% 40% 60% 45%; box-shadow: 0 0 12px #00a2ff, inset 0 0 10px #106dff; opacity: .86; }
 .ring-a { animation: spin 4.3s linear infinite; }

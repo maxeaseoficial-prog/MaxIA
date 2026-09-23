@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('maxApi', {
   command: (text: string) => ipcRenderer.invoke('max:command', text),
   transcribe: (samples: number[]) => ipcRenderer.invoke('audio:transcribe', samples),
   bargeIn: () => ipcRenderer.invoke('audio:barge-in'),
+  orbDragStart: (screenX: number, screenY: number) => ipcRenderer.send('orb:drag-start', screenX, screenY),
+  orbDragMove: (screenX: number, screenY: number) => ipcRenderer.send('orb:drag-move', screenX, screenY),
+  orbDragEnd: () => ipcRenderer.send('orb:drag-end'),
   onState: (callback: (state: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, state: string) => callback(state)
     ipcRenderer.on('max:state', listener)

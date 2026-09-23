@@ -7,10 +7,7 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
-        input: {
-          index: resolve('apps/desktop/src/main/index.ts'),
-          'workers/ai-worker': resolve('apps/desktop/src/main/workers/ai-worker.ts')
-        }
+        input: resolve('apps/desktop/src/main/index.ts')
       }
     }
   },

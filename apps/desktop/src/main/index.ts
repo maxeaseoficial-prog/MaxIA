@@ -9,13 +9,13 @@ import { ComputerControl } from './modules/computer-control'
 import { LocalDatabase } from './modules/database'
 import { KnowledgeEngine } from './modules/knowledge'
 import { LlmProviderRegistry, OllamaLlmProvider } from './modules/llm'
-import { LocalAiProcess } from './modules/local-ai-process'
 import { MemoryEngine } from './modules/memory'
 import { Orchestrator } from './modules/orchestrator'
 import { PermissionsEngine } from './modules/permissions'
 import { RiskPolicy } from './modules/risk'
 import { StateController } from './modules/state'
-import { LocalWhisperProvider } from './modules/stt'
+import { NativeMacSpeechProcess } from './modules/native-speech'
+import { NativeMacSpeechProvider } from './modules/stt'
 import { TtsEngine } from './modules/tts'
 import { VisionEngine } from './modules/vision'
 import { WakeWordEngine } from './modules/wake-word'
@@ -27,7 +27,8 @@ let tray: Tray | null = null
 let orchestrator: Orchestrator
 let knowledge: KnowledgeEngine
 let database: LocalDatabase
-let sttProcess: LocalAiProcess | null = null
+let sttProcess: NativeMacSpeechProcess | null = null
+let orbDragState: { screenX: number; screenY: number; windowX: number; windowY: number } | null = null
 const permissions = new PermissionsEngine()
 const wakeWord = new WakeWordEngine()
 let lastTranscript = ''
@@ -125,9 +126,11 @@ async function setup(): Promise<void> {
   orbWindow = createOrbWindow()
 
   const state = new StateController(() => orbWindow)
-  const workerPath = join(currentDir, 'workers', 'ai-worker.js')
-  sttProcess = new LocalAiProcess(workerPath, join(userData, 'models', 'stt'), 'STT')
-  const audio = new AudioEngine(new LocalWhisperProvider(sttProcess), new TtsEngine())
+  const speechHelperPath = app.isPackaged
+    ? join(process.resourcesPath, 'native', 'speech-helper')
+    : join(process.cwd(), 'build', 'native', 'speech-helper')
+  sttProcess = new NativeMacSpeechProcess(speechHelperPath, join(userData, 'speech-temp'))
+  const audio = new AudioEngine(new NativeMacSpeechProvider(sttProcess), new TtsEngine())
   orchestrator = new Orchestrator({
     state,
     audio,
@@ -148,6 +151,25 @@ async function setup(): Promise<void> {
   ipcMain.handle('max:cancel', () => orchestrator.cancel())
   ipcMain.handle('max:command', (_event, text: string) => orchestrator.handleTranscript(text))
   ipcMain.handle('audio:barge-in', () => orchestrator.cancel())
+
+  ipcMain.on('orb:drag-start', (_event, screenX: number, screenY: number) => {
+    if (!orbWindow || orbWindow.isDestroyed()) return
+    const [windowX, windowY] = orbWindow.getPosition()
+    orbDragState = { screenX, screenY, windowX, windowY }
+  })
+
+  ipcMain.on('orb:drag-move', (_event, screenX: number, screenY: number) => {
+    if (!orbWindow || orbWindow.isDestroyed() || !orbDragState) return
+
+    const x = Math.round(orbDragState.windowX + screenX - orbDragState.screenX)
+    const y = Math.round(orbDragState.windowY + screenY - orbDragState.screenY)
+    orbWindow.setPosition(x, y, false)
+  })
+
+  ipcMain.on('orb:drag-end', () => {
+    orbDragState = null
+  })
+
   ipcMain.handle('audio:transcribe', async (_event, samples: number[]) => {
     try {
       const result = await audio.transcribe(Float32Array.from(samples))

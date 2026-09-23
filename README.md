@@ -13,12 +13,12 @@ Implementado de verdade:
 - orbe transparente, always-on-top e arrastável;
 - persistência da última posição do orbe;
 - estados internos: dormindo, acordando, ouvindo, pensando, executando, falando e erro; o orbe muda de animação sem exibir rótulos como “Ouvindo” ou “Falando”;
-- controles de microfone, câmera, permissões e descanso;
-- wake word **"Hey Max"** usando reconhecimento local com Whisper Tiny via Transformers.js;
-- captura de áudio com WebAudio e processamento adaptativo;
-- TTS local pelo `say` do macOS;
-- VAD adaptativo antes do Whisper e filtro anti-alucinação para silêncio/ruído;
-- STT isolado do processo principal; conversa local executada via Ollama para evitar crash nativo do ONNX dentro do Electron;
+- controles de microfone, câmera, permissões e descanso aparecem apenas ao clicar no orbe; clicar novamente recolhe os controles; arrastar o orbe não abre o menu;
+- wake word **"Hey Max"** usando o reconhecimento nativo do macOS;
+- captura de áudio com WebAudio e VAD determinístico em JavaScript;
+- STT local pelo **SpeechAnalyzer / SpeechTranscriber da Apple**, sem Whisper, ONNX ou serviço externo;
+- TTS local pelo **`say` do macOS**, sem modelo de voz de terceiros;
+- conversa local executada via Ollama; o Ollama é usado apenas para linguagem, não para voz;
 - interrupção de fala/barge-in básica;
 - comandos:
   - `Hey Max`
@@ -66,7 +66,7 @@ Esses itens permanecem explícitos como próxima etapa em vez de serem simulados
 - **Desktop:** Electron
 - **Frontend:** React + TypeScript
 - **Build:** electron-vite + electron-builder
-- **STT local:** Whisper Tiny via `@xenova/transformers`, isolado em processo filho
+- **STT nativo:** Apple SpeechAnalyzer / SpeechTranscriber (pt-BR, on-device)
 - **LLM local:** Qwen 2.5 0.5B via Ollama local (processo externo estável)
 - **TTS local:** `/usr/bin/say`
 - **Storage:** SQLite via `sql.js`
@@ -86,8 +86,9 @@ A decisão Electron vs Tauri vs Swift está documentada em [`docs/ADR-001-deskto
 - macOS recomendado;
 - Node.js 22+;
 - npm 10+;
-- acesso à internet na **primeira** inicialização para baixar o Whisper Tiny e, na primeira conversa, o modelo local Qwen 1.5 0.5B Chat;
-- depois dos downloads, STT e conversa rodam localmente.
+- macOS 26+ com Command Line Tools compatíveis para compilar o helper nativo de fala;
+- Ollama instalado para conversas livres; o reconhecimento e a síntese de voz não dependem do Ollama;
+- o SpeechTranscriber usa os recursos nativos do sistema e processa voz no dispositivo.
 
 ### Permissões macOS
 
@@ -126,7 +127,7 @@ A MAX inicia em background. Use o item **MAX** da barra de menus para acordar ma
 Hey Max
 ```
 
-Na primeira transcrição, o Whisper Tiny será baixado. Na primeira conversa livre, a MAX baixa o Qwen 1.5 0.5B Chat. Os dois ficam em cache local para as próximas execuções.
+Ao rodar `npm run dev`, o projeto compila um pequeno helper Swift que usa o SpeechAnalyzer nativo do macOS. A primeira conversa livre pode baixar o modelo Qwen pelo Ollama, mas a voz continua totalmente separada e nativa.
 
 ---
 
@@ -312,8 +313,8 @@ A MAX nunca deve tratar conteúdo de documentos importados como instruções con
 ### A MAX não ouve "Hey Max"
 
 1. confira `Privacy & Security → Microphone`;
-2. aguarde o primeiro download do Whisper Tiny;
-3. rode em terminal e procure erro do provider local;
+2. confirme que o Mac está no macOS 26+;
+3. rode `npm run native:speech` e confirme `native-speech: built ...`;
 4. confirme que o microfone não está mutado no menu do orbe.
 
 ### O orbe não aparece
@@ -347,3 +348,15 @@ A prioridade técnica seguinte é completar o **Computer/Vision Agent** no macOS
 7. embeddings locais e busca híbrida no Cérebro.
 
 Isso transforma a MAX de assistente por comandos básicos em agente desktop multimodal sem depender de coordenadas fixas.
+
+
+### Voz nativa
+
+A MAX não usa um modelo de voz de terceiros. O caminho de voz é:
+
+```text
+Microfone → VAD em JavaScript → Apple SpeechAnalyzer (pt-BR, on-device)
+Resposta → /usr/bin/say do macOS
+```
+
+O LLM local via Ollama recebe apenas texto e devolve apenas texto.
