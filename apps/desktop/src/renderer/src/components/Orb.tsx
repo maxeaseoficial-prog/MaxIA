@@ -118,7 +118,6 @@ export function Orb() {
 
   return (
     <main className="orb-shell">
-      <div className="speech-bubble">{labels[state]}</div>
       <div className={`orb orb-${state}`} aria-label={`MAX ${labels[state]}`} onDoubleClick={() => window.maxApi.wake()}>
         <span className="orb-ring ring-a" />
         <span className="orb-ring ring-b" />

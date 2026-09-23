@@ -12,7 +12,7 @@ Implementado de verdade:
 - execução em background com menu de status/tray;
 - orbe transparente, always-on-top e arrastável;
 - persistência da última posição do orbe;
-- estados visuais: dormindo, acordando, ouvindo, pensando, executando, falando e erro;
+- estados internos: dormindo, acordando, ouvindo, pensando, executando, falando e erro; o orbe muda de animação sem exibir rótulos como “Ouvindo” ou “Falando”;
 - controles de microfone, câmera, permissões e descanso;
 - wake word **"Hey Max"** usando reconhecimento local com Whisper Tiny via Transformers.js;
 - captura de áudio com WebAudio e processamento adaptativo;
@@ -52,7 +52,6 @@ Ainda **não** é anunciado como pronto nesta versão:
 - extração automática de entidades/relações do PDF;
 - renomear/mover/reindexar documentos no Cérebro;
 - memória de projetos/conversas consolidada;
-- provedor LLM configurado por padrão;
 - wake-word dedicado de ultrabaixo consumo;
 - instalador assinado/notarizado para distribuição pública.
 
@@ -66,6 +65,7 @@ Esses itens permanecem explícitos como próxima etapa em vez de serem simulados
 - **Frontend:** React + TypeScript
 - **Build:** electron-vite + electron-builder
 - **STT local:** Whisper Tiny via `@xenova/transformers`
+- **LLM local:** Qwen 1.5 0.5B Chat via `@xenova/transformers`
 - **TTS local:** `/usr/bin/say`
 - **Storage:** SQLite via `sql.js`
 - **PDF:** `pdf-parse`
@@ -84,8 +84,8 @@ A decisão Electron vs Tauri vs Swift está documentada em [`docs/ADR-001-deskto
 - macOS recomendado;
 - Node.js 22+;
 - npm 10+;
-- acesso à internet na **primeira** inicialização do reconhecimento de voz para baixar o modelo Whisper Tiny;
-- depois do download, a inferência de voz ocorre localmente.
+- acesso à internet na **primeira** inicialização para baixar o Whisper Tiny e, na primeira conversa, o modelo local Qwen 1.5 0.5B Chat;
+- depois dos downloads, STT e conversa rodam localmente.
 
 ### Permissões macOS
 
@@ -124,7 +124,7 @@ A MAX inicia em background. Use o item **MAX** da barra de menus para acordar ma
 Hey Max
 ```
 
-Na primeira transcrição, o modelo Whisper Tiny será baixado e armazenado no cache local do provider.
+Na primeira transcrição, o Whisper Tiny será baixado. Na primeira conversa livre, a MAX baixa o Qwen 1.5 0.5B Chat. Os dois ficam em cache local para as próximas execuções.
 
 ---
 

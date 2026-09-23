@@ -8,7 +8,7 @@ import { BrowserControl } from './modules/browser-control'
 import { ComputerControl } from './modules/computer-control'
 import { LocalDatabase } from './modules/database'
 import { KnowledgeEngine } from './modules/knowledge'
-import { LlmProviderRegistry } from './modules/llm'
+import { LlmProviderRegistry, LocalTransformersLlmProvider } from './modules/llm'
 import { MemoryEngine } from './modules/memory'
 import { Orchestrator } from './modules/orchestrator'
 import { PermissionsEngine } from './modules/permissions'
@@ -129,7 +129,7 @@ async function setup(): Promise<void> {
     audio,
     browser: new BrowserControl(),
     computer: new ComputerControl(),
-    llm: new LlmProviderRegistry(),
+    llm: new LlmProviderRegistry(new LocalTransformersLlmProvider(join(userData, 'models', 'llm'))),
     audit: new AuditLog(join(userData, 'audit', 'actions.jsonl')),
     vision: new VisionEngine(),
     risk: new RiskPolicy(),
