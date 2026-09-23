@@ -57,7 +57,7 @@ function createOrbWindow(): BrowserWindow {
     show: false,
     backgroundColor: '#00000000',
     webPreferences: {
-      preload: join(currentDir, '../preload/index.js'),
+      preload: join(currentDir, '../preload/preload.mjs'),
       contextIsolation: true,
       sandbox: false,
       backgroundThrottling: false
@@ -87,7 +87,7 @@ function createBrainWindow(): BrowserWindow {
     title: 'Cérebro do Max',
     backgroundColor: '#020814',
     webPreferences: {
-      preload: join(currentDir, '../preload/index.js'),
+      preload: join(currentDir, '../preload/preload.mjs'),
       contextIsolation: true,
       sandbox: false
     }
