@@ -145,9 +145,11 @@ async function setup(): Promise<void> {
   ipcMain.handle('max:command', (_event, text: string) => orchestrator.handleTranscript(text))
   ipcMain.handle('audio:barge-in', () => orchestrator.cancel())
   ipcMain.handle('audio:transcribe', async (_event, samples: number[]) => {
-    const result = await audio.transcribe(Float32Array.from(samples))
-    const text = result.text.trim()
-    if (!text) return { text: '', action: 'none' }
+    try {
+      const result = await audio.transcribe(Float32Array.from(samples))
+      const text = result.text.trim()
+      if (!text) return { text: '', action: 'none' }
+      console.log(`[MAX][STT] ${JSON.stringify(text)}`)
 
     const now = Date.now()
     if (text === lastTranscript && now - lastTranscriptAt < 3500) return { text, action: 'duplicate' }
@@ -167,8 +169,13 @@ async function setup(): Promise<void> {
       return { text, action: 'sleep' }
     }
 
-    if (state.current !== 'speaking') void orchestrator.handleTranscript(text)
-    return { text, action: 'command' }
+      if (state.current !== 'speaking') void orchestrator.handleTranscript(text)
+      return { text, action: 'command' }
+    } catch (error) {
+      const detail = error instanceof Error ? error.stack ?? error.message : String(error)
+      console.error('[MAX][STT][erro]', detail)
+      return { text: '', action: 'stt-error' }
+    }
   })
   ipcMain.handle('permissions:snapshot', () => permissions.snapshot())
   ipcMain.handle('permissions:request', (_event, kind: 'microphone' | 'camera') => permissions.request(kind))
@@ -189,6 +196,20 @@ async function setup(): Promise<void> {
   })
 }
 
+process.on('uncaughtException', error => console.error('[MAX][uncaughtException]', error))
+process.on('unhandledRejection', error => console.error('[MAX][unhandledRejection]', error))
+
+app.on('child-process-gone', (_event, details) => console.error('[MAX][child-process-gone]', details))
+app.on('render-process-gone', (_event, webContents, details) => {
+  console.error('[MAX][render-process-gone]', details)
+  if (orbWindow && webContents.id === orbWindow.webContents.id && !orbWindow.isDestroyed()) {
+    void orbWindow.reload()
+  }
+})
+
 void app.whenReady().then(setup)
 app.on('window-all-closed', () => {})
-app.on('before-quit', () => { tray?.destroy() })
+app.on('before-quit', () => {
+  console.log('[MAX][lifecycle] before-quit')
+  tray?.destroy()
+})
