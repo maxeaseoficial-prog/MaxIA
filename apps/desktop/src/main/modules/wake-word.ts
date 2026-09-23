@@ -1,4 +1,4 @@
-import { normalizeText, stripWakeWord } from './intent'
+import { normalizeText, stripWakeWord } from './intent.ts'
 
 export type WakeWordDetection = { detected: boolean; commandAfterWakeWord: string }
 
