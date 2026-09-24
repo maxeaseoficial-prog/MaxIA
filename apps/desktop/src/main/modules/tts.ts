@@ -19,14 +19,14 @@ export class TtsEngine {
     const args = ['-v', voice, '-r', '185', text]
 
     await new Promise<void>((resolve, reject) => {
-      const process = spawn('/usr/bin/say', args, { stdio: 'pipe' })
-      this.process = process
+      const child = spawn('/usr/bin/say', args, { stdio: 'pipe' })
+      this.process = child
 
-      process.once('error', reject)
-      process.once('exit', code => {
-        if (this.process === process) this.process = null
+      child.once('error', reject)
+      child.once('exit', code => {
+        if (this.process === child) this.process = null
         if (code === 0 || code === null) resolve()
-        else reject(new Error(\`say encerrou com código \${code}\`))
+        else reject(new Error('say encerrou com código ' + String(code)))
       })
     })
   }
@@ -52,7 +52,7 @@ export class TtsEngine {
     )
 
     if (ptBr) {
-      console.log(\`[MAX][TTS] voz masculina pt-BR: \${ptBr.name}\`)
+      console.log('[MAX][TTS] voz masculina pt-BR: ' + ptBr.name)
       return ptBr.name
     }
 
@@ -63,17 +63,20 @@ export class TtsEngine {
     )
 
     if (portuguese) {
-      console.log(\`[MAX][TTS] voz masculina portuguesa: \${portuguese.name} (\${portuguese.locale})\`)
+      console.log('[MAX][TTS] voz masculina portuguesa: ' + portuguese.name + ' (' + portuguese.locale + ')')
       return portuguese.name
     }
 
-    const guaranteedMaleFallbacks = ['Alex', 'Daniel', 'Fred', 'Ralph', 'Bruce']
-    for (const fallback of guaranteedMaleFallbacks) {
+    const maleFallbacks = ['Alex', 'Daniel', 'Fred', 'Ralph', 'Bruce']
+    for (const fallback of maleFallbacks) {
       const voice = voices.find(item => item.name.toLowerCase() === fallback.toLowerCase())
       if (voice) {
         console.warn(
-          \`[MAX][TTS] voz masculina pt-BR não instalada; usando \${voice.name} (\${voice.locale}). \` +
-          'Para português natural, instale Felipe em Ajustes do Sistema > Acessibilidade > Leitura e Fala.'
+          '[MAX][TTS] voz masculina pt-BR não instalada; usando ' +
+          voice.name +
+          ' (' +
+          voice.locale +
+          '). Para português natural, instale Felipe em Ajustes do Sistema > Acessibilidade > Leitura e Fala.'
         )
         return voice.name
       }

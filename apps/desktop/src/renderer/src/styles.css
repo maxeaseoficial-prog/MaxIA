@@ -26,8 +26,6 @@ button { color: inherit; }
 .orb-menu button { width: 100%; display: flex; gap: 12px; align-items: center; border: 0; background: transparent; padding: 10px 12px; cursor: pointer; color: #d8e5f7; }
 .orb-menu button:hover { color: white; background: rgba(39,119,220,.12); border-radius: 11px; }
 .menu-separator { border-top: 1px solid rgba(121,157,200,.18); margin: 7px 4px; }
-.voice-dot { position: absolute; left: 18px; bottom: 18px; width: 8px; height: 8px; border-radius: 50%; background: #5a6471; }
-.voice-dot.ready { background: #1ec8ff; box-shadow: 0 0 12px #00a3ff; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes spinReverse { to { transform: rotate(-360deg); } }
 @keyframes float { 50% { transform: translateY(-5px); } }

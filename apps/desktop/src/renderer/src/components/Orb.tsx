@@ -284,14 +284,16 @@ export function Orb() {
         <span className="orb-core" />
       </div>
 
-      <div className="orb-controls" aria-hidden={!controlsOpen}>
-        <button className={micEnabled ? 'active' : ''} tabIndex={controlsOpen ? 0 : -1} title={micEnabled ? 'Mutar microfone' : 'Ativar microfone'} onClick={() => setMicEnabled(value => !value)}>
-          {micEnabled ? <Mic size={22} /> : <MicOff size={22} />}
-        </button>
-        <button className={cameraEnabled ? 'active' : ''} tabIndex={controlsOpen ? 0 : -1} title="Câmera" onClick={toggleCamera}><Camera size={22} /></button>
-        <button tabIndex={controlsOpen ? 0 : -1} title="Configurações" onClick={() => setMenuOpen(value => !value)}><Settings size={22} /></button>
-        <button tabIndex={controlsOpen ? 0 : -1} title="Descansar" onClick={() => window.maxApi.sleep()}><X size={25} /></button>
-      </div>
+      {controlsOpen && (
+        <div className="orb-controls">
+          <button className={micEnabled ? 'active' : ''} title={micEnabled ? 'Mutar microfone' : 'Ativar microfone'} onClick={() => setMicEnabled(value => !value)}>
+            {micEnabled ? <Mic size={22} /> : <MicOff size={22} />}
+          </button>
+          <button className={cameraEnabled ? 'active' : ''} title="Câmera" onClick={toggleCamera}><Camera size={22} /></button>
+          <button title="Configurações" onClick={() => setMenuOpen(value => !value)}><Settings size={22} /></button>
+          <button title="Descansar" onClick={() => window.maxApi.sleep()}><X size={25} /></button>
+        </div>
+      )}
 
       {controlsOpen && menuOpen && (
         <div className="orb-menu">
