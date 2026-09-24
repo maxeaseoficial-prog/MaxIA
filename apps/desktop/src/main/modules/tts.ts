@@ -18,8 +18,8 @@ export class TtsEngine {
     const speechText = prepareSpeechText(text)
     if (!speechText) return
 
-    const voice = await this.resolveMaleVoice()
-    const args = ['-v', voice, '-r', '178', speechText]
+    const voice = await this.resolvePortugueseVoice()
+    const args = ['-v', voice, '-r', '165', speechText]
 
     await new Promise<void>((resolve, reject) => {
       const child = spawn('/usr/bin/say', args, { stdio: 'pipe' })
@@ -39,55 +39,44 @@ export class TtsEngine {
     this.process = null
   }
 
-  private resolveMaleVoice(): Promise<string> {
-    if (!this.voicePromise) this.voicePromise = this.findMaleVoice()
+  private resolvePortugueseVoice(): Promise<string> {
+    if (!this.voicePromise) this.voicePromise = this.findPortugueseVoice()
     return this.voicePromise
   }
 
-  private async findMaleVoice(): Promise<string> {
+  private async findPortugueseVoice(): Promise<string> {
     const { stdout } = await execFileAsync('/usr/bin/say', ['-v', '?'])
     const voices = parseVoices(String(stdout))
 
-    const preferredPtBr = ['felipe', 'eddy', 'reed', 'rocko']
-    const ptBr = voices.find(voice =>
+    const preferredMalePtBr = ['felipe', 'thiago', 'eddy', 'reed', 'rocko']
+    const malePtBr = voices.find(voice =>
       voice.locale.toLowerCase() === 'pt_br' &&
-      preferredPtBr.some(prefix => voice.name.toLowerCase().startsWith(prefix))
+      preferredMalePtBr.some(prefix => voice.name.toLowerCase().startsWith(prefix))
     )
 
-    if (ptBr) {
-      console.log('[MAX][TTS] voz masculina pt-BR: ' + ptBr.name)
-      return ptBr.name
+    if (malePtBr) {
+      console.log('[MAX][TTS] voz pt-BR preferida: ' + malePtBr.name)
+      return malePtBr.name
     }
 
-    const preferredPortuguese = ['joão', 'joao', 'felipe']
-    const portuguese = voices.find(voice =>
-      voice.locale.toLowerCase().startsWith('pt_') &&
-      preferredPortuguese.some(prefix => voice.name.toLowerCase().startsWith(prefix))
+    const anyPtBr = voices.find(voice => voice.locale.toLowerCase() === 'pt_br')
+    if (anyPtBr) {
+      console.warn('[MAX][TTS] usando voz pt-BR nativa: ' + anyPtBr.name)
+      return anyPtBr.name
+    }
+
+    const anyPortuguese = voices.find(voice =>
+      voice.locale.toLowerCase().startsWith('pt_')
     )
 
-    if (portuguese) {
-      console.log('[MAX][TTS] voz masculina portuguesa: ' + portuguese.name + ' (' + portuguese.locale + ')')
-      return portuguese.name
-    }
-
-    const maleFallbacks = ['Alex', 'Daniel', 'Fred', 'Ralph', 'Bruce']
-    for (const fallback of maleFallbacks) {
-      const voice = voices.find(item => item.name.toLowerCase() === fallback.toLowerCase())
-      if (voice) {
-        console.warn(
-          '[MAX][TTS] voz masculina pt-BR não instalada; usando ' +
-          voice.name +
-          ' (' +
-          voice.locale +
-          '). Para português natural, instale Felipe em Ajustes do Sistema > Acessibilidade > Leitura e Fala.'
-        )
-        return voice.name
-      }
+    if (anyPortuguese) {
+      console.warn('[MAX][TTS] voz pt-BR não instalada; usando ' + anyPortuguese.name + ' (' + anyPortuguese.locale + ')')
+      return anyPortuguese.name
     }
 
     throw new Error(
-      'Nenhuma voz masculina compatível foi encontrada no macOS. ' +
-      'Instale Felipe em Ajustes do Sistema > Acessibilidade > Leitura e Fala > Voz do sistema.'
+      'Nenhuma voz em português está instalada no macOS. ' +
+      'Instale uma voz pt-BR em Ajustes do Sistema > Acessibilidade > Leitura e Fala.'
     )
   }
 }
@@ -97,11 +86,12 @@ export function prepareSpeechText(input: string): string {
   if (!text) return ''
 
   text = text
+    .replace(/\b(?:ponto final|ponto de exclama(?:ção|cao)|ponto de interroga(?:ção|cao)|vírgula|virgula|abre aspas|fecha aspas)\b/gi, ' ')
     .replace(/https?:\/\/\S+/gi, ' link ')
     .replace(/\b(\d{1,2}):(\d{2})\b/g, '$1 horas e $2')
+    .replace(/(-?\d+(?:[.,]\d+)?)\s*°\s*C\b/gi, '$1 graus')
+    .replace(/(-?\d+(?:[.,]\d+)?)\s*°\b/g, '$1 graus')
     .replace(/(\d+(?:[.,]\d+)?)\s*%/g, '$1 por cento')
-    .replace(/\x60\x60\x60[a-z0-9_-]*\n?/gi, ' ')
-    .replace(/\x60\x60\x60/g, ' ')
     .replace(/[*_~#>|]/g, ' ')
     .replace(/[.!?…]+/g, '\n')
     .replace(/[,;:]+/g, ' ')

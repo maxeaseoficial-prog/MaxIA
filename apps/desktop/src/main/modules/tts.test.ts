@@ -2,17 +2,24 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { prepareSpeechText } from './tts.ts'
 
-test('TTS remove pontuação que o macOS poderia anunciar', () => {
+test('TTS remove pontuação visual da fala', () => {
   assert.equal(
     prepareSpeechText('Feito! Tudo certo. Posso ajudar?'),
     'Feito\nTudo certo\nPosso ajudar'
   )
 })
 
-test('TTS remove markdown e símbolos de leitura', () => {
+test('TTS remove nomes literais de pontuação', () => {
   assert.equal(
-    prepareSpeechText('**Henrique:** abra o Google, por favor!'),
-    'Henrique abra o Google por favor'
+    prepareSpeechText('Feito ponto final Próximo ponto de exclamação'),
+    'Feito Próximo'
+  )
+})
+
+test('TTS deixa temperatura natural', () => {
+  assert.equal(
+    prepareSpeechText('Previsão de sol, com 27 °C.'),
+    'Previsão de sol com 27 graus'
   )
 })
 

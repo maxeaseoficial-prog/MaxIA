@@ -1,4 +1,5 @@
 import type { NativeAppleLanguageProcess } from './native-language'
+import { shapeAssistantReply } from './response-style'
 
 export interface LlmProvider {
   readonly id: string
@@ -19,7 +20,8 @@ export class NativeAppleLlmProvider implements LlmProvider {
 
     try {
       const reply = (await this.process.answer(userText)).trim()
-      return reply || 'Henrique, não consegui formular uma resposta agora.'
+      const shaped = shapeAssistantReply(userText, reply)
+      return shaped || 'Henrique, não consegui formular uma resposta agora.'
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error)
       console.error('[MAX][LLM][Apple]', detail)
