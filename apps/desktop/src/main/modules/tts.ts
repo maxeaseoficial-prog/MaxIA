@@ -15,8 +15,11 @@ export class TtsEngine {
   async speak(text: string): Promise<void> {
     this.stop()
 
+    const speechText = prepareSpeechText(text)
+    if (!speechText) return
+
     const voice = await this.resolveMaleVoice()
-    const args = ['-v', voice, '-r', '185', text]
+    const args = ['-v', voice, '-r', '178', speechText]
 
     await new Promise<void>((resolve, reject) => {
       const child = spawn('/usr/bin/say', args, { stdio: 'pipe' })
@@ -87,6 +90,29 @@ export class TtsEngine {
       'Instale Felipe em Ajustes do Sistema > Acessibilidade > Leitura e Fala > Voz do sistema.'
     )
   }
+}
+
+export function prepareSpeechText(input: string): string {
+  let text = input.normalize('NFC').trim()
+  if (!text) return ''
+
+  text = text
+    .replace(/https?:\/\/\S+/gi, ' link ')
+    .replace(/\b(\d{1,2}):(\d{2})\b/g, '$1 horas e $2')
+    .replace(/(\d+(?:[.,]\d+)?)\s*%/g, '$1 por cento')
+    .replace(/\x60\x60\x60[a-z0-9_-]*\n?/gi, ' ')
+    .replace(/\x60\x60\x60/g, ' ')
+    .replace(/[*_~#>|]/g, ' ')
+    .replace(/[.!?…]+/g, '\n')
+    .replace(/[,;:]+/g, ' ')
+    .replace(/[()[\]{}<>“”"‘’'\\/]+/g, ' ')
+    .replace(/[—–-]+/g, ' ')
+    .replace(/&/g, ' e ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n+ */g, '\n')
+    .trim()
+
+  return text
 }
 
 function parseVoices(output: string): SystemVoice[] {

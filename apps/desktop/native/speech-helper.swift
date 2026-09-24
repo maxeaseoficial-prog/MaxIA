@@ -39,6 +39,7 @@ func transcribeFile(path: String, mode: String) async throws -> String {
             "abre",
             "abrir",
             "Google",
+            "YouTube",
             "Chrome",
             "navegador",
             "WhatsApp",
