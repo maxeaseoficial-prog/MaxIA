@@ -28,6 +28,8 @@ Implementado de verdade:
   - `Abra seu cérebro`
   - `Abra o <aplicativo>` no macOS;
 - resposta operacional padrão **"Feito."**;
+- Skill Registry local: comandos conhecidos são executados diretamente sem passar pelo modelo de linguagem;
+- skills iniciais para Google Search, hora/data, screenshot, abertura de apps, navegador, Cérebro e contexto da tela;
 - Cérebro do Max com UI inspirada diretamente nas referências do produto;
 - grafo interativo com zoom, pan e seleção;
 - upload real de PDF;
@@ -75,7 +77,7 @@ Esses itens permanecem explícitos como próxima etapa em vez de serem simulados
 - **Ícones:** lucide-react
 - **macOS control:** LaunchServices (`open`), Electron Shell, Screen Capture e System Events para metadados da janela ativa
 
-A decisão Electron vs Tauri vs Swift está documentada em [`docs/ADR-001-desktop-stack.md`](docs/ADR-001-desktop-stack.md).
+A decisão Electron vs Tauri vs Swift está documentada em [`docs/ADR-001-desktop-stack.md`](docs/ADR-001-desktop-stack.md). O sistema modular de skills está documentado em [`docs/ADR-002-skill-registry.md`](docs/ADR-002-skill-registry.md).
 
 ---
 
@@ -141,6 +143,10 @@ Abra o Google
 Abra seu cérebro
 Abra o WhatsApp
 Abra o Google Chrome
+Pesquise no Google por restaurantes perto de mim
+Que horas são?
+Que dia é hoje?
+Tire um print da tela
 ```
 
 Ao completar uma ação operacional com sucesso:

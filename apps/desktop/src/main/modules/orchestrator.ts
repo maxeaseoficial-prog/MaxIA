@@ -1,5 +1,4 @@
 import type { BrowserWindow } from 'electron'
-import { classifyCommand } from './intent'
 import type { AuditLog } from './audit'
 import type { AudioEngine } from './audio-engine'
 import type { BrowserControl } from './browser-control'
@@ -8,6 +7,8 @@ import type { LlmProviderRegistry } from './llm'
 import type { RiskPolicy } from './risk'
 import type { StateController } from './state'
 import type { VisionEngine } from './vision'
+import type { SkillRegistry } from '../skills/registry'
+import type { SkillContext } from '../skills/types'
 
 export class Orchestrator {
   constructor(
@@ -20,6 +21,7 @@ export class Orchestrator {
       audit: AuditLog
       vision: VisionEngine
       risk: RiskPolicy
+      skills: SkillRegistry
       showOrb: () => void
       hideOrb: () => void
       showBrain: () => BrowserWindow
@@ -27,62 +29,71 @@ export class Orchestrator {
   ) {}
 
   async handleTranscript(raw: string): Promise<void> {
-    const intent = classifyCommand(raw)
+    const clean = raw.trim()
+    if (!clean) return
+
     this.deps.state.set('thinking')
 
     try {
-      switch (intent.type) {
-        case 'sleep':
-          this.deps.audio.interruptSpeech()
-          this.deps.state.set('sleeping')
-          this.deps.hideOrb()
-          await this.deps.audit.write({ intent: raw, result: 'success', detail: 'sleep' })
+      const resolved = this.deps.skills.resolve(clean)
+
+      if (resolved) {
+        if (resolved.skill.risk !== 'low') {
+          this.deps.state.set('confirming')
+          await this.deps.audit.write({
+            intent: clean,
+            result: 'confirmation-required',
+            detail: `${resolved.skill.id}:${resolved.skill.risk}`
+          })
+          await this.deps.audio.speak('Henrique, essa ação precisa de confirmação explícita.')
+          this.deps.state.set('listening')
           return
-        case 'open-browser':
-          this.deps.state.set('executing')
-          await this.deps.computer.openDefaultBrowser()
-          return this.finishOperational(raw)
-        case 'open-google':
-          this.deps.state.set('executing')
-          await this.deps.browser.openGoogle()
-          return this.finishOperational(raw)
-        case 'open-brain':
-          this.deps.state.set('executing')
-          this.deps.showBrain().show()
-          return this.finishOperational(raw)
-        case 'open-app': {
-          const risk = this.deps.risk.assess(`abrir app ${intent.appName}`)
-          if (risk.requiresExplicitConfirmation) throw new Error('Esta ação exige confirmação e ainda não possui fluxo de confirmação neste MVP.')
-          this.deps.state.set('executing')
-          await this.deps.computer.openApp(intent.appName)
-          return this.finishOperational(raw)
         }
-        case 'screen-question': {
-          this.deps.state.set('executing')
-          const observation = await this.deps.vision.observePrimaryScreen()
-          const response = observation.activeApplication
-            ? `Henrique, a janela ativa é ${observation.activeApplication}${observation.activeWindowTitle ? `, ${observation.activeWindowTitle}` : ''}. A interpretação visual completa ainda está marcada como próxima etapa.`
-            : 'Henrique, capturei a tela, mas a interpretação visual completa ainda não está configurada nesta versão.'
-          return this.say(response, raw)
+
+        this.deps.state.set('executing')
+        const result = await resolved.skill.execute(resolved.match, this.skillContext())
+
+        if (result.kind === 'sleep') {
+          this.deps.state.set('sleeping')
+          await this.deps.audit.write({
+            intent: clean,
+            result: 'success',
+            detail: result.detail ?? resolved.skill.id
+          })
+          return
         }
-        case 'conversation': {
-          const response = await this.deps.llm.current().answer(intent.text)
-          return this.say(response, raw)
+
+        if (result.kind === 'spoken') {
+          return this.say(result.text, clean, true, result.detail ?? resolved.skill.id)
         }
+
+        await this.deps.audit.write({
+          intent: clean,
+          result: 'success',
+          detail: result.detail ?? resolved.skill.id
+        })
+        return this.say('Feito.', clean, false)
       }
+
+      const response = await this.deps.llm.current().answer(clean)
+      return this.say(response, clean)
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error)
       this.deps.state.set('error')
-      await this.deps.audit.write({ intent: raw, result: 'failure', detail })
-      await this.deps.audio.speak(`Henrique, não consegui concluir. ${detail}`)
-      this.deps.state.set('listening')
+      await this.deps.audit.write({ intent: clean, result: 'failure', detail })
+
+      try {
+        await this.deps.audio.speak(`Henrique, não consegui concluir. ${detail}`)
+      } finally {
+        this.deps.state.set('listening')
+      }
     }
   }
 
   wake(): void {
     this.deps.showOrb()
     this.deps.state.set('waking')
-    setTimeout(() => this.deps.state.set('listening'), 300)
+    setTimeout(() => this.deps.state.set('listening'), 180)
   }
 
   cancel(): void {
@@ -91,15 +102,35 @@ export class Orchestrator {
     void this.deps.audit.write({ intent: 'cancel', result: 'cancelled' })
   }
 
-  private async finishOperational(intent: string): Promise<void> {
-    await this.deps.audit.write({ intent, result: 'success' })
-    await this.say('Feito.', intent, false)
+  private skillContext(): SkillContext {
+    return {
+      audio: this.deps.audio,
+      browser: this.deps.browser,
+      computer: this.deps.computer,
+      audit: this.deps.audit,
+      vision: this.deps.vision,
+      showBrain: this.deps.showBrain,
+      hideOrb: this.deps.hideOrb
+    }
   }
 
-  private async say(text: string, intent: string, log = true): Promise<void> {
+  private async say(
+    text: string,
+    intent: string,
+    log = true,
+    detail?: string
+  ): Promise<void> {
     this.deps.state.set('speaking')
     await this.deps.audio.speak(text)
-    if (log) await this.deps.audit.write({ intent, result: 'success' })
+
+    if (log) {
+      await this.deps.audit.write({
+        intent,
+        result: 'success',
+        detail
+      })
+    }
+
     this.deps.state.set('listening')
   }
 }

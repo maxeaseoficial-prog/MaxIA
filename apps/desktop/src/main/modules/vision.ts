@@ -1,5 +1,7 @@
 import { desktopCapturer, screen } from 'electron'
 import { execFile } from 'node:child_process'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname } from 'node:path'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -24,27 +26,53 @@ export class VisionEngine {
     const size = primary.size
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
-      thumbnailSize: { width: Math.min(size.width, 1600), height: Math.min(size.height, 1000) }
+      thumbnailSize: {
+        width: Math.min(size.width, 1920),
+        height: Math.min(size.height, 1200)
+      }
     })
+
     const source = sources[0]
     if (!source) throw new Error('Nenhuma tela disponível para captura.')
 
     const frontmost = await this.frontmostApp()
-    const observation = {
+    const observation: ScreenObservation = {
       capturedAt: new Date().toISOString(),
       activeApplication: frontmost.app,
       activeWindowTitle: frontmost.title,
       dataUrl: source.thumbnail.toDataURL()
     }
+
     this.lastObservation = observation
+
     if (this.clearTimer) clearTimeout(this.clearTimer)
-    this.clearTimer = setTimeout(() => { this.lastObservation = null }, 30_000)
+    this.clearTimer = setTimeout(() => {
+      this.lastObservation = null
+    }, 30_000)
+
     return observation
+  }
+
+  async savePrimaryScreenshot(filePath: string): Promise<void> {
+    const primary = screen.getPrimaryDisplay()
+    const size = primary.size
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: size.width, height: size.height }
+    })
+
+    const source = sources[0]
+    if (!source) throw new Error('Nenhuma tela disponível para captura.')
+
+    await mkdir(dirname(filePath), { recursive: true })
+    await writeFile(filePath, source.thumbnail.toPNG())
   }
 
   private async frontmostApp(): Promise<{ app?: string; title?: string }> {
     if (process.platform !== 'darwin') return {}
+
     const script = 'tell application "System Events" to tell (first process whose frontmost is true) to return {name, name of front window}'
+
     try {
       const { stdout } = await execFileAsync('/usr/bin/osascript', ['-e', script])
       const parts = stdout.trim().split(', ')

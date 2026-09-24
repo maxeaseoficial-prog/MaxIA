@@ -20,6 +20,8 @@ import { NativeMacSpeechProvider } from './modules/stt'
 import { TtsEngine } from './modules/tts'
 import { VisionEngine } from './modules/vision'
 import { WakeWordEngine } from './modules/wake-word'
+import { createBuiltinSkills } from './skills/builtins'
+import { SkillRegistry } from './skills/registry'
 
 const currentDir = dirname(fileURLToPath(import.meta.url))
 let orbWindow: BrowserWindow | null = null
@@ -149,6 +151,7 @@ async function setup(): Promise<void> {
     audit: new AuditLog(join(userData, 'audit', 'actions.jsonl')),
     vision: new VisionEngine(),
     risk: new RiskPolicy(),
+    skills: new SkillRegistry(createBuiltinSkills()),
     showOrb: () => orbWindow?.showInactive(),
     hideOrb: () => orbWindow?.hide(),
     showBrain: createBrainWindow

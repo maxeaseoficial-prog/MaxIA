@@ -9,7 +9,8 @@ A MAX é um aplicativo desktop local e não uma página web. O processo Electron
 - **Desktop Shell**: Electron, BrowserWindow transparente e always-on-top, tray e janela do Cérebro.
 - **Wake Word / Audio / STT**: captura WebAudio no renderer, VAD determinístico e transcrição em pt-BR via helper Swift usando Apple SpeechAnalyzer/SpeechTranscriber on-device. Não há Whisper/ONNX no caminho de voz.
 - **TTS**: `/usr/bin/say` do macOS; nenhuma voz de terceiros é usada.
-- **Orchestrator**: roteamento de intenções operacionais e conversacionais.
+- **Orchestrator**: coordena estado, segurança, voz e fallback conversacional; não contém mais regras específicas de cada comando.
+- **Skill Registry**: catálogo local de capacidades determinísticas. Skills fazem match de comandos, declaram risco e executam ações sem depender do LLM.
 - **LLM Provider**: interface substituível com Apple Foundation Models (`SystemLanguageModel.default`) como provedor local padrão; comandos operacionais não passam pelo LLM.
 - **Computer Control**: LaunchServices/`open`, `shell.openExternal` e app padrão do sistema. A camada evita coordenadas de mouse.
 - **Browser Control**: inicialmente via navegador padrão e URLs; automação semântica de DOM/Accessibility é próxima etapa.
@@ -18,6 +19,17 @@ A MAX é um aplicativo desktop local e não uma página web. O processo Electron
 - **Memory / Local Storage**: SQLite via sql.js, com preferências e posição do orbe persistentes.
 - **Permissions**: microfone, câmera, tela e Accessibility.
 - **Audit Log**: JSONL local com intenção e resultado.
+
+## Roteamento de comandos
+
+```text
+Transcrição → Skill Registry → skill encontrada → execução determinística → Feito.
+                         └→ sem skill → LLM local → resposta conversacional
+```
+
+Skills iniciais: abrir navegador/Google/apps, pesquisa no Google, Cérebro, screenshot, contexto da tela, hora, data e descanso.
+
+A decisão está detalhada em `docs/ADR-002-skill-registry.md`.
 
 ## Loop de automação visual
 
