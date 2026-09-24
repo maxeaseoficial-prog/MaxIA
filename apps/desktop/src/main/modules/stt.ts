@@ -1,10 +1,14 @@
-import type { NativeMacSpeechProcess } from './native-speech'
+import type { NativeMacSpeechProcess, SpeechMode } from './native-speech'
 
 export type Transcription = { text: string }
 
 export interface SttProvider {
   readonly id: string
-  transcribe(samples: Float32Array, sampleRate?: number): Promise<Transcription>
+  transcribe(
+    samples: Float32Array,
+    sampleRate?: number,
+    mode?: SpeechMode
+  ): Promise<Transcription>
 }
 
 export class NativeMacSpeechProvider implements SttProvider {
@@ -15,10 +19,17 @@ export class NativeMacSpeechProvider implements SttProvider {
     this.process = process
   }
 
-  async transcribe(samples: Float32Array, sampleRate = 16_000): Promise<Transcription> {
-    if (samples.length < Math.round(sampleRate * 0.3)) return { text: '' }
+  async transcribe(
+    samples: Float32Array,
+    sampleRate = 48_000,
+    mode: SpeechMode = 'command'
+  ): Promise<Transcription> {
+    if (samples.length < Math.round(sampleRate * 0.2)) return { text: '' }
 
-    const text = sanitizeTranscript(await this.process.transcribe(samples, sampleRate))
+    const text = sanitizeTranscript(
+      await this.process.transcribe(samples, sampleRate, mode)
+    )
+
     return { text }
   }
 }
@@ -43,9 +54,6 @@ export function sanitizeTranscript(raw: string): string {
     if (maxCount / words.length >= 0.55) return ''
   }
 
-  // Correções conservadoras para erros recorrentes do ditado pt-BR em frases curtas.
-  // "estam" não é uma forma verbal válida; "abram" é aceito só como variação
-  // quando aparece em posição de comando dirigido à MAX.
   text = text.replace(/\bestam\b/gi, 'está')
   text = text.replace(
     /^((?:(?:hey|ei|e)\s+(?:max|mais|mex)[, ]+)?)abram\b/i,

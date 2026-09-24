@@ -185,7 +185,8 @@ async function setup(): Promise<void> {
   ipcMain.handle('audio:transcribe', async (_event, samples: number[], sampleRate: number) => {
     try {
       const safeSampleRate = Number.isFinite(sampleRate) && sampleRate >= 8_000 && sampleRate <= 192_000 ? sampleRate : 48_000
-      const result = await audio.transcribe(Float32Array.from(samples), safeSampleRate)
+      const speechMode = state.current === 'sleeping' ? 'wake' : 'command'
+      const result = await audio.transcribe(Float32Array.from(samples), safeSampleRate, speechMode)
       const text = result.text.trim()
       if (!text) return { text: '', action: 'none' }
       const ambientOnly = /^(?:\[(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\]|\((?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel)\)|(?:m[uú]sica|risos?|aplausos?|sil[eê]ncio|inaud[ií]vel))[.!?]*$/i.test(text.trim())

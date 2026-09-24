@@ -1,11 +1,16 @@
+import type { SpeechMode } from './native-speech'
 import type { SttProvider, Transcription } from './stt'
 import type { TtsEngine } from './tts'
 
 export class AudioEngine {
   constructor(private readonly stt: SttProvider, private readonly tts: TtsEngine) {}
 
-  transcribe(samples: Float32Array, sampleRate = 16_000): Promise<Transcription> {
-    return this.stt.transcribe(samples, sampleRate)
+  transcribe(
+    samples: Float32Array,
+    sampleRate = 48_000,
+    mode: SpeechMode = 'command'
+  ): Promise<Transcription> {
+    return this.stt.transcribe(samples, sampleRate, mode)
   }
 
   speak(text: string): Promise<void> {

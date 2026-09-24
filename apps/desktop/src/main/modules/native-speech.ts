@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+export type SpeechMode = 'wake' | 'command'
+
 type Pending = {
   resolve: (value: string) => void
   reject: (reason?: unknown) => void
@@ -28,8 +30,13 @@ export class NativeMacSpeechProcess {
     private readonly tempDir: string
   ) {}
 
-  async transcribe(samples: Float32Array, sampleRate = 16_000): Promise<string> {
+  async transcribe(
+    samples: Float32Array,
+    sampleRate = 48_000,
+    mode: SpeechMode = 'command'
+  ): Promise<string> {
     await mkdir(this.tempDir, { recursive: true })
+
     const id = this.nextId++
     const tempPath = join(this.tempDir, `${randomUUID()}.wav`)
     await writeFile(tempPath, encodeWav(samples, sampleRate))
@@ -41,10 +48,10 @@ export class NativeMacSpeechProcess {
         this.pending.delete(id)
         void unlink(tempPath).catch(() => {})
         reject(new Error('Reconhecimento nativo de voz excedeu o tempo limite.'))
-      }, 30_000)
+      }, mode === 'wake' ? 10_000 : 30_000)
 
       this.pending.set(id, { resolve, reject, timer, tempPath })
-      child.stdin.write(`${JSON.stringify({ id, path: tempPath })}\n`)
+      child.stdin.write(`${JSON.stringify({ id, path: tempPath, mode })}\n`)
     })
   }
 
@@ -101,6 +108,7 @@ export class NativeMacSpeechProcess {
 
     child.on('exit', (code, signal) => {
       if (this.child === child) this.child = null
+
       const error = new Error(
         `Reconhecimento nativo encerrou (code=${String(code)}, signal=${String(signal)}).`
       )

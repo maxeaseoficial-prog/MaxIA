@@ -5,6 +5,7 @@ import Speech
 struct SpeechRequest: Codable {
     let id: Int
     let path: String
+    let mode: String?
 }
 
 struct SpeechResponse: Codable {
@@ -15,31 +16,43 @@ struct SpeechResponse: Codable {
 }
 
 @available(macOS 26.0, *)
-func transcribeFile(path: String) async throws -> String {
+func transcribeFile(path: String, mode: String) async throws -> String {
     let file = try AVAudioFile(forReading: URL(fileURLWithPath: path))
     let locale = Locale(identifier: "pt_BR")
     let transcriber = DictationTranscriber(locale: locale, preset: .phrase)
 
     let context = AnalysisContext()
-    context.contextualStrings[.general] = [
-        "Hey Max",
-        "Ei Max",
-        "Max",
-        "Henrique",
-        "abra",
-        "abre",
-        "abrir",
-        "Google",
-        "Chrome",
-        "navegador",
-        "WhatsApp",
-        "cérebro",
-        "descansar",
-        "microfone",
-        "câmera",
-        "configurações",
-        "está"
-    ]
+
+    if mode == "wake" {
+        context.contextualStrings[.general] = [
+            "Hey Max",
+            "Ei Max",
+            "Max"
+        ]
+    } else {
+        context.contextualStrings[.general] = [
+            "Hey Max",
+            "Ei Max",
+            "Max",
+            "Henrique",
+            "abra",
+            "abre",
+            "abrir",
+            "Google",
+            "Chrome",
+            "navegador",
+            "WhatsApp",
+            "cérebro",
+            "descansar",
+            "pesquise",
+            "print",
+            "screenshot",
+            "microfone",
+            "câmera",
+            "configurações",
+            "está"
+        ]
+    }
 
     let options = SpeechAnalyzer.Options(
         priority: .userInitiated,
@@ -89,7 +102,10 @@ struct NativeSpeechHelper {
 
             do {
                 let request = try JSONDecoder().decode(SpeechRequest.self, from: data)
-                let text = try await transcribeFile(path: request.path)
+                let text = try await transcribeFile(
+                    path: request.path,
+                    mode: request.mode ?? "command"
+                )
                 emitSpeech(SpeechResponse(id: request.id, ok: true, text: text, error: nil))
             } catch {
                 let fallbackId = (try? JSONDecoder().decode(SpeechRequest.self, from: data).id) ?? -1
