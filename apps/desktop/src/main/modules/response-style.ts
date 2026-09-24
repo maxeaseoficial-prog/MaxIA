@@ -71,7 +71,7 @@ function stripFormatting(value: string): string {
 
 function detectWeatherCondition(text: string): string | null {
   if (/\b(?:chuva|chuvoso|chover|garoa|temporal|trovoad)/i.test(text)) return 'chuva'
-  if (/\b(?:sol|ensolarad|céu aberto|ceu aberto)\b/i.test(text)) return 'sol'
+  if (/\b(?:sol|ensolarad[oa]s?|céu aberto|ceu aberto)\b/i.test(text)) return 'sol'
   if (/\b(?:nublado|nuvens|encoberto)\b/i.test(text)) return 'tempo nublado'
   if (/\b(?:frio|queda de temperatura)\b/i.test(text)) return 'tempo frio'
   if (/\b(?:calor|quente|temperaturas? altas?)\b/i.test(text)) return 'tempo quente'
